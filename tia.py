@@ -20,8 +20,8 @@ import csv
 def load_peptides(peptide_file):
     try:
         peptides_df = pd.read_csv(peptide_file)
-        if 'peptide' not in peptides_df.columns or 'mass' not in peptides_df.columns:
-            raise ValueError("The peptide file must contain 'peptide' and 'mass' columns.")
+        if 'peptide' not in peptides_df.columns or 'monoisotopic mass' not in peptides_df.columns:
+            raise ValueError("The peptide file must contain 'peptide' and 'monoisotopic mass' columns.")
         return peptides_df.to_dict('records')
     except Exception as e:
         print(f"Error loading peptide file: {e}")
@@ -86,7 +86,7 @@ def main():
     # Save the output to a CSV file
     output_df = pd.DataFrame(glycopeptides)
     output_file = "glycopeptides_output.csv"
-    output_df.to_csv(output_file, columns=['glycopeptide', 'mass'], index=False)
+    output_df.to_csv(output_file, columns=['glycopeptide', 'monoisotopic mass'], index=False)
     print(f"Glycopeptides saved to {output_file}")
 
 if __name__ == "__main__":
