@@ -38,9 +38,6 @@ def load_glycans(glycan_file):
         print(f"Error loading glycan file: {e}")
         exit(1)
 
-# Might not need this depending on what brooks has done but this function is to calculate peptide mass using Pyteomics. 
-# I wrote this without turning it into a variable so can change for more claarity if needed
-
 def calculate_peptide_mass(peptide):
     try:
         return mass.fast_mass(peptide)
@@ -51,7 +48,7 @@ def calculate_peptide_mass(peptide):
 # Function to generate glycopeptides and calculate their monoisotopic mass
 # Taking into consideration when a glycan attaches to a peptide a covalent bond is formed.
 # The bond releases H₂O so reducing the overall mass by 18.01528 Da
-# Should I write this as a try/except function? i.e for errors
+
 
 
 def generate_glycopeptides(peptides, glycans):
