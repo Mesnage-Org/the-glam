@@ -24,3 +24,11 @@ list
 """
 ```
 
+# Related Work
+https://github.com/SugarPy/SugarPy
+https://github.com/ursgal/ursgal
+https://github.com/pyQms/pyqms
+
+# Findings
+The MeHex mass was wrong, so structures with more MeHex were more incorrect in their masses.
+Also, something horrific happened with the core structure — it's off by 12+ Da
