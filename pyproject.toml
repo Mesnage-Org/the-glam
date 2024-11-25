@@ -1,9 +1,245 @@
 [project]
 name = "glam"
 version = "0.1.0"
-description = "Add your description here"
+description = "GLycan Analysis Module"
 readme = "README.md"
+license = {text = "GNU Affero GPLv3"}
 requires-python = ">=3.12"
 dependencies = [
     "pyteomics>=4.7.5",
 ]
+authors = [
+  {name = "Tia Duh", email="tlduh1@sheffield.ac.uk"},
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research"
+]
+keywords = [
+  "glycan"
+]
+[project.optional-dependencies]
+tests = [
+  "filetype",
+  "pytest",
+  "pytest-cov",
+  "pytest-github-actions-annotate-failures",
+  "pytest-mpl",
+  "pytest-testmon",
+  "syrupy",
+]
+docs = [
+  "Sphinx",
+  "myst_parser",
+  "numpydoc",
+  "pydata_sphinx_theme",
+  "sphinx-autoapi",
+  "sphinx-multiversion",
+  "sphinx_markdown_tables",
+  "sphinx_rtd_theme",
+  "sphinxcontrib-mermaid",
+  "sphinxcontrib-napoleon",
+]
+dev = [
+  "black",
+  "ipython",
+  "mypy",
+  "pre-commit",
+  "pylint",
+  "pyupgrade",
+  "pytest-durations",
+  "pytest-icdiff",
+  "pytest-testmon",
+  "pytest-xdist",
+]
+pypi = [
+  "build",
+  "setuptools_scm[toml]",
+  "wheel",
+]
+
+[project.urls]
+Source = "https://github.com/Mesnage-Org/glam"
+BugTracker = "https://github.com/Mesnage-Org/glam/issues"
+# Documentation = ""
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["glam"]
+exclude = ["tests"]
+namespaces = false
+
+[tool.setuptools.package-data]
+topostats = ["*.yaml"]
+
+[tool.setuptools_scm]
+write_to = "glam/_version.py"
+
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["--cov", "--mpl", "-ra", "--strict-config", "--strict-markers"]
+log_level = "INFO"
+log_cli = true
+log_cli_level = "INFO"
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning"
+]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["glam"]
+omit = [
+  "glam/_version.py",
+  "*tests*",
+  "**/__init__*",
+]
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.venv
+  )/
+)
+'''
+
+[tool.ruff]
+exclude = [
+  "*.ipynb",
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".hg",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  "__pycache__",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "docs/source/conf.py",
+  "isoslam/all_introns_counts_and_info.py",
+]
+# per-file-ignores = []
+line-length = 120
+lint.select = [
+  "A", # flake8-builtins
+  "B", # flake8-bugbear
+  "D", # pydocstyle
+  "E", # pycodestyle error
+  "F", # pyflakes
+  "I", # isort
+  "NPY", # numpy
+  "PT", # flake8-pytest-style
+  "PTH", # flake8-use-pathlib
+  "R", # refactor (pylint)
+  "S", #flake8-bandit
+  "W", # pycodestyle warning
+  "UP", # pyupgrade
+]
+lint.ignore = [
+  "B905",
+  "E501",
+  "S101",
+  "S403",
+]
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+lint.fixable = [
+  "A", # flake8-builtins
+  "B", # flake8-bugbear
+  "D", # pydocstyle
+  "E", # pycodestyle error
+  "F", # pyflakes
+  "I", # isort
+  "NPY", # numpy
+  "PT", # flake8-pytest-style
+  "PTH", # flake8-use-pathlib
+  "R", # refactor (pylint)
+  "S", #flake8-bandit
+  "W", # pycodestyle warning
+ "UP", # pyupgrade
+]
+lint.unfixable = []
+
+# Numpy2 deprecation checks
+lint.extend-select = ["NPY201"]
+preview = false
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = true
+
+[tool.codespell]
+skip = "*.csv*"
+count = ""
+quiet-level = 3
+
+[tool.numpydoc_validation]
+checks = [
+  "all", # Perform all check except those listed below
+  "ES01",
+  "EX01",
+  "PR10", # Conflicts with black formatting
+  "SA01",
+]
+exclude = [  # don't report on objects that match any of these regex
+    "\\.undocumented_method$",
+    "\\.__repr__$",
+    "^test_",
+    "^conftest",
+    "^conf$",
+    "isoslam/all_introns_counts_and_info.py",
+]
+override_SS05 = [  # override SS05 to allow docstrings starting with these words
+    "^Process ",
+    "^Assess ",
+    "^Access ",
+]
+
+[tool.mypy]
+files = [
+  "isoslam",
+  "tests"
+]
+python_version = "3.12"
+strict = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+exclude = [
+  "",
+]
+
+[[tool.mypy.overrides]]
+module = [ "numpy.*", ]
+ignore_missing_imports = true
