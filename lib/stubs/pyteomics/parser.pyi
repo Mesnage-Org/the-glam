@@ -7,4 +7,6 @@ def cleave(
     min_length: int | None,
     max_length: int | None,
     semi: bool,
+    exception: str | Pattern[str] | None,
+    regex: bool,
 ) -> set[str]: ...

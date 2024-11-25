@@ -1,7 +1,7 @@
 [project]
-name = "glam"
-version = "0.1.0"
-description = "Add your description here"
+name = "the-glam"
+version = "1.0.0"
+description = "The Glycopeptide Analysis Module"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.13.0",
+    "pdoc3>=0.11.1",
     "pytest>=8.3.3",
     "ruff>=0.7.3",
 ]

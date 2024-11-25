@@ -1,12 +1,23 @@
-watch:
-    watchexec -e py,pyi,toml just test check fmt
+export PYTHONWARNINGS := "ignore::DeprecationWarning:glycowork"
 
-test:
+watch-py:
+    watchexec -e py,pyi,toml just test-py check-py fmt-py
+
+test-py:
     cd lib && uv run pytest
 
-check:
+check-py:
     cd lib && uv run mypy .
     cd lib && uv run ruff check
 
-fmt:
+# Formats all code in both `lib/` and `web/`
+# FIXME: Or will do... Eventually
+fmt-py:
     cd lib && uv run ruff format
+
+# Installs the local `glam` package as editable
+install-py:
+    cd lib && uv pip install -e .
+
+watch-web:
+    cd web && bun dev --open

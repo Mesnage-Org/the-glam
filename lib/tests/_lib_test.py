@@ -1,38 +1,71 @@
-from textwrap import dedent
+# Imports ==============================================================================
+
+# Standard Library
 from pathlib import Path
 
+# Dependencies
+from pyteomics import fasta
 import pytest
-from glam import GLYCOSYLATION_MOTIFS
+
+# Local Modules
+from glam import DIGESTIONS, GLYCOSYLATION_MOTIFS
 from glam._lib import (
     glycan_mass,
     load_glycans,
     digest_protein,
     filter_glycopeptides,
     peptide_mass,
+    build_glycopeptides,
     convert_to_csv,
 )
-from pyteomics import fasta
 
-# Test Data  ===================================================================
+# Test Data  ===========================================================================
 
+# Inputs
 SPIKE_PROTEIN: str = next(fasta.read("tests/data/algal_spike.faa")).sequence
 GLYCANS: str = Path("tests/data/chlamy_glycans.csv").read_text()
 GLYCANS_AND_MASSES: str = Path("tests/data/chlamy_glycans_and_masses.csv").read_text()
 
-# Helper Functions ============================================================
+# Expected Outputs
+TRYPTIC_PEPTIDES: set[str] = set(
+    Path("tests/data/tryptic_peptides.txt").read_text().splitlines()
+)
+GLYCOPEPTIDES: set[str] = set(
+    Path("tests/data/glycopeptides.txt").read_text().splitlines()
+)
+CSV: str = Path("tests/data/csv.csv").read_text().replace("\n", "\r\n")
 
 
-def detrim(s: str) -> str:
-    return dedent(s.strip("\r\n"))
+# Unit Tests ===========================================================================
 
-
-# Unit Tests ===================================================================
 
 def test_glycan_mass() -> None:
     iupac_structure = "Neu5Ac(a2-3)Gal6S(b1-3)[Neu5Ac(a2-6)]GalNAc"
     assert glycan_mass(iupac_structure) == 1045.2903546
-    # byonic_composition = "Hex(4)HexNAc(2)Me(3)Hex(3)Pent(2)dHex(1)"
-    # assert glycan_mass(byonic_composition) == 2010.72845026293
+
+    byonic_composition = "HexNAc(2)Hex(3)Pent(1)dHex(1)"
+    assert glycan_mass(byonic_composition) == 1188.4279546
+
+    oxford_notation = "FA2G2S1"
+    assert glycan_mass(oxford_notation) == 2077.7454546
+
+
+def test_glycan_mass_raises() -> None:
+    nonsense_structure = "gm-AEJA"
+    with pytest.raises(ValueError) as e:
+        glycan_mass(nonsense_structure)
+    assert str(e.value) == "Invalid glycan structure / composition: 'gm-AEJA'"
+
+    just_numbers = "123"
+    with pytest.raises(ValueError) as e:
+        print(glycan_mass(just_numbers))
+    assert str(e.value) == "Invalid glycan structure / composition: '123'"
+
+    empty = ""
+    with pytest.raises(ValueError) as e:
+        print(glycan_mass(empty))
+    assert str(e.value) == "Invalid glycan structure / composition: ''"
+
 
 def test_load_glycans_with_masses() -> None:
     glycans = load_glycans(GLYCANS_AND_MASSES)
@@ -44,147 +77,36 @@ def test_load_glycans_without_masses() -> None:
     glycans = load_glycans(GLYCANS)
     assert len(glycans) == 52
     assert all(type(g) is str and type(m) is float for g, m in glycans)
+
     expected_glycans = load_glycans(GLYCANS_AND_MASSES)
-    things = [(abs(e[1] - o[1]), o[1], o[0]) for e, o in zip(sorted(list(expected_glycans)), sorted(list(glycans)))]
-    for thing in sorted(things):
-        print(thing)
-    breakpoint()
+    assert glycans == expected_glycans
 
 
 def test_load_glycans_raises() -> None:
-    no_header = detrim("""
-    Hex(6)HexNAc(2)MeHex(0)Pent(0)dHex(1),1524.5335944644
-    Hex(4)HexNAc(2)MeHex(2)Pent(2)dHex(0),1670.5915032738
-    Hex(5)HexNAc(2)MeHex(1)Pent(2)dHex(0),1656.5758532096
-    """)
+    no_header = GLYCANS_AND_MASSES.removeprefix("Glycan,Monoisotopic Mass\n")
     with pytest.raises(ValueError) as e:
         load_glycans(no_header)
-    assert (
-        str(e.value)
-        == "The glycan file must contain the columns: ['Glycan', 'Monoisotopic Mass']"
+    assert str(e.value) == (
+        "The glycan file must contain either the columns "
+        "['Glycan', 'Monoisotopic Mass'] or just ['Glycan']"
     )
 
 
 def test_digest_protein() -> None:
-    expected_tryptic_peptides = {
-        "AAEIR",
-        "AGCLIGAEHVNNSYECDIPIGAGICASYQTQTNSPGSASSVASQSIIAYTMSLGAENSVAYSNNSIAIPTNFTISVTTEILPVSMTK",
-        "AHFPR",
-        "ALTGIAVEQDK",
-        "ASANLAATK",
-        "CTLK",
-        "CVNFNFNGLTGTGVLTESNK",
-        "CYGVSPTK",
-        "DFGGFNFSQILPDPSKPSK",
-        "DIADTTDAVR",
-        "DISTEIYQAGSTPCNGVEGFNCYFPLQSYGFQPTNGVGYQPYR",
-        "DLICAQK",
-        "DLPQGFSALEPLVDLPIGINITR",
-        "DPQTLEILDITPCSFGGVSVITPGTNTSNQVAVLYQDVNCTEVPVAIHADQLTPTWR",
-        "EELDK",
-        "EFVFK",
-        "EGVFVSNGTHWFVTQR",
-        "EIDR",
-        "FASVYAWNR",
-        "FDNPVLPFNDGVYFASTEK",
-        "FLPFQQFGR",
-        "FNGIGVTQNVLYENQK",
-        "FNGLTVLPPLLTDEMIAQYTSALLAGTITSGWTFGAGAALQIPFAMQMAYR",
-        "FPNITNLCPFGEVFNATR",
-        "FQTLLALHR",
-        "GDEVR",
-        "GIYQTSNFR",
-        "GVYYPDK",
-        "GWIFGTTLDSK",
-        "GYHLMSFPQSAPHGVVFLHVTYVPAQEK",
-        "HTPINLVR",
-        "IADYNYK",
-        "IQDSLSSTASALGK",
-        "ISNCVADYSVLYNSASFSTFK",
-        "IYSK",
-        "K",
-        "LDPPEAEVQIDR",
-        "LFR",
-        "LIANQFNSAIGK",
-        "LITGR",
-        "LNDLCFTNVYADSFVIR",
-        "LNEVAK",
-        "LPDDFTGCVIAWNSNNLDSK",
-        "LQDVVNQNAQALNTLVK",
-        "LQSLQTYVTQQLIR",
-        "MAR",
-        "MNLTTR",
-        "MSECVLGQSK",
-        "NFTTAPAICHDGK",
-        "NFYEPQIITTDNTFVSGNCDVVIGIVNNTVYDPLQPELDSFK",
-        "NHTSPDVDLGDISGINASVVNIQK",
-        "NIDGYFK",
-        "NK",
-        "NLNESLIDLQELGK",
-        "NLR",
-        "NNK",
-        "NTQEVFAQVK",
-        "QGNFK",
-        "QIAPGQTGK",
-        "QIYK",
-        "QLSSNFGAISSVLNDILSR",
-        "QYGDCLGDIAAR",
-        "R",
-        "SFIEDLLFNK",
-        "SFTVEK",
-        "SNIIR",
-        "SNLKPFER",
-        "SSVLHSTQDLFLPFFSNVTWFHAIHVSGTNGTK",
-        "STNLVK",
-        "SWMESEFR",
-        "SYLTPGDSSSGWTAGAAAYYVGYLQPR",
-        "TFLLK",
-        "TGALLLVALALAGCAQACR",
-        "TPPIK",
-        "TQLPPAYTNSFTR",
-        "TQSLLIVNNATNVVIK",
-        "TSVDCTMYICGDSTECSNLLLQYGSFCTQLNR",
-        "VCEFQFCNDPFLGVYYHK",
-        "VDFCGK",
-        "VFR",
-        "VGGNYNYLYR",
-        "VQPTESIVR",
-        "VTLADAGFIK",
-        "VVVLSFELLHAPATVCGPK",
-        "VYSSANNCTFEYVSQPFLMDLEGK",
-        "VYSTGSNVFQTR",
-        "WGSHHHHHHHHSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSPSGYPYDVPDYA",
-        "YEQYIK",
-        "YFK",
-        "YNENGTITDAVDCALDPLSETK",
-    }
-    tryptic_peptides = digest_protein(SPIKE_PROTEIN)
+    tryptic_peptides = digest_protein(
+        SPIKE_PROTEIN, DIGESTIONS["Trypsin"], 0, None, None, False
+    )
     assert len(tryptic_peptides) == 90
-    assert tryptic_peptides == expected_tryptic_peptides
+    assert tryptic_peptides == TRYPTIC_PEPTIDES
 
 
 def test_filter_glycopeptides() -> None:
-    expected_glycopeptides = {
-        "AGCLIGAEHVNNSYECDIPIGAGICASYQTQTNSPGSASSVASQSIIAYTMSLGAENSVAYSNNSIAIPTNFTISVTTEILPVSMTK",
-        "DFGGFNFSQILPDPSKPSK",
-        "DLPQGFSALEPLVDLPIGINITR",
-        "DPQTLEILDITPCSFGGVSVITPGTNTSNQVAVLYQDVNCTEVPVAIHADQLTPTWR",
-        "EGVFVSNGTHWFVTQR",
-        "FPNITNLCPFGEVFNATR",
-        "MNLTTR",
-        "NFTTAPAICHDGK",
-        "NFYEPQIITTDNTFVSGNCDVVIGIVNNTVYDPLQPELDSFK",
-        "NHTSPDVDLGDISGINASVVNIQK",
-        "NLNESLIDLQELGK",
-        "SSVLHSTQDLFLPFFSNVTWFHAIHVSGTNGTK",
-        "TQSLLIVNNATNVVIK",
-        "VYSSANNCTFEYVSQPFLMDLEGK",
-        "YNENGTITDAVDCALDPLSETK",
-    }
-    tryptic_peptides = digest_protein(SPIKE_PROTEIN)
+    tryptic_peptides = digest_protein(
+        SPIKE_PROTEIN, DIGESTIONS["Trypsin"], 0, None, None, False
+    )
     glycopeptides = filter_glycopeptides(tryptic_peptides, GLYCOSYLATION_MOTIFS["N"])
     assert len(glycopeptides) == 15
-    assert glycopeptides == expected_glycopeptides
+    assert glycopeptides == GLYCOPEPTIDES
 
 
 def test_peptide_mass() -> None:
@@ -202,8 +124,17 @@ def test_peptide_mass_raises() -> None:
 
 
 def test_build_glycopeptides() -> None:
-    # FIXME: Check this is working with Tia!
-    pass
+    peptides = {"PEP", "TIDE"}
+    glycans = {("A", 1.0), ("AB", 20.0), ("ABC", 300.0)}
+    glycopeptides = {
+        ("A-PEP", 324.14813086937005),
+        ("AB-PEP", 343.14813086937005),
+        ("ABC-PEP", 623.1481308693701),
+        ("A-TIDE", 459.20128864104004),
+        ("AB-TIDE", 478.20128864104004),
+        ("ABC-TIDE", 758.20128864104),
+    }
+    assert build_glycopeptides(peptides, glycans) == glycopeptides
 
 
 def test_convert_to_csv() -> None:
@@ -212,12 +143,5 @@ def test_convert_to_csv() -> None:
         ("B", 128.123456789),
         ("C", 1337.123456789),
     }
-    expected_csv = detrim("""
-        Structure,Monoisotopicmass
-        A,42.123457
-        B,128.123457
-        C,1337.123457
-    """).replace("\n", "\r\n")
     csv = convert_to_csv(glycopeptides)
-    print(csv)
-    assert csv == expected_csv
+    assert csv == CSV

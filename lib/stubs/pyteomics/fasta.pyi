@@ -1,8 +1,7 @@
-from typing import IO
+from collections import namedtuple
 from collections.abc import Iterator
+from typing import IO
 
-class FastaEntry:
-    description: str
-    sequence: str
+Protein = namedtuple("Protein", ("description", "sequence"))
 
-def read(source: str | IO | None) -> Iterator[FastaEntry]: ...
+def read(source: str | IO | None, use_index: bool = False) -> Iterator[Protein]: ...
