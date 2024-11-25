@@ -42,7 +42,7 @@ await micropip.install("theglam==1.0.0");
 // lib/ directory (adajacent to this file), replace the version below and comment out the above (which loads from
 // PyPI).
 // await micropip.install('./the-glam-0.1.0-py3-none-any.whl');
-await pyodide.runPythonAsync("from theglam import *")
+await pyodide.runPythonAsync("from glam import *")
 const generate_glycopeptides = pyodide.globals.get('generate_glycopeptides');
 
 const msg = {
